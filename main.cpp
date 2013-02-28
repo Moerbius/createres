@@ -37,13 +37,19 @@ void showHelp();
 void showFiles(char *filename);
 
 int currentfile = 1;  //This integer indicates what file we're currently adding to the resource.
-int currentloc = 0;      //This integer references the current write-location within the resource file
+int currentloc = 0;	    //This integer references the current write-location within the resource file
 
 int main(int argc, char *argv[]) {
 
     int optind = 1;
-printf("args: %i\n", argc);
+
     if(argc == 1)
+    {
+        showHelp();
+        exit(0);
+    }
+    
+    if(argc == 2 && strcmp(argv[2], "-h"))
     {
         showHelp();
         exit(0);
@@ -52,24 +58,31 @@ printf("args: %i\n", argc);
     while ((optind < argc) && (argv[optind][0]=='-'))
     {
         char *sw = argv[optind];
-        char a[] = "-h";
-        if(strcmp(sw, a) != 0)
+        char *filename;
+        char *folder;
+        
+        if(strcmp(sw, "-f") == 0)
         {
             optind++;
-            showHelp();
+            //showHelp();
+            printf("F");
         }
-        else if(strcmp(sw, "-f") != 0)
+        else if(strcmp(sw, "-n") == 0)
         {
             optind++;
-            printf("%s", argv[optind]);
+            printf("N");
         }
         else
         {
             optind++;
             showHelp();
+            exit(0);
         }
 
     }
+
+
+
 
 /*
 	char pathname[MAXPATHLEN+1];	//This character array will hold the app's working directory path
