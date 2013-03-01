@@ -29,6 +29,7 @@ BYTELOC      DATA        EXPLANATION
 */
 
 //Function prototypes
+void pack(char *filename, char *path);
 int getfilesize(char *filename);
 int countfiles(char *path);
 void packfile(char *filename, int fd);
@@ -41,51 +42,38 @@ int currentloc = 0;	    //This integer references the current write-location wit
 
 int main(int argc, char *argv[]) {
 
-    int optind = 1;
+    char *filename;
+    char *path;
 
-    if(argc == 1)
+    if(argc != 5)
     {
+        printf("Not enough arguments, please try again.\n\n");
         showHelp();
         exit(0);
     }
-    
-    if(argc == 2 && strcmp(argv[2], "-h"))
+    else
     {
-        showHelp();
-        exit(0);
+        for(int i = 1; i < argc; i++)
+        {
+            if(strcmp(argv[i], "-f") == 0)
+            {
+                filename = argv[i + 1];
+            }
+            else if(strcmp(argv[i], "-p") == 0)
+            {
+                path = argv[i + 1];
+            }
+        }
     }
 
-    while ((optind < argc) && (argv[optind][0]=='-'))
-    {
-        char *sw = argv[optind];
-        char *filename;
-        char *folder;
-        
-        if(strcmp(sw, "-f") == 0)
-        {
-            optind++;
-            //showHelp();
-            printf("F");
-        }
-        else if(strcmp(sw, "-n") == 0)
-        {
-            optind++;
-            printf("N");
-        }
-        else
-        {
-            optind++;
-            showHelp();
-            exit(0);
-        }
+    pack(filename, path);
 
-    }
+	return 0;
+}
 
-
-
-
-/*
-	char pathname[MAXPATHLEN+1];	//This character array will hold the app's working directory path
+void pack(char *filename, char *path)
+{
+    char pathname[MAXPATHLEN+1];	//This character array will hold the app's working directory path
 	int filecount;		            //How many files are we adding to the resource?
 	int fd;				            //The file descriptor for the new resource
 
@@ -93,23 +81,15 @@ int main(int argc, char *argv[]) {
 	getcwd(pathname, sizeof(pathname));
 
 	//How many files are there?
-	filecount = countfiles(argv[1]);
+	filecount = countfiles(path);
 	printf("NUMBER OF FILES: %i\n", filecount);
 
 	//Go back to the original path
 	chdir(pathname);
 
-	//How many arguments did the user pass?
-	if (argc < 3)
-	{
-		//The user didn't specify a resource file name, go with the default
-		fd = open("resource.dat", O_WRONLY | O_EXCL | O_CREAT | O_BINARY, S_IRUSR);
-	}
-	else
-	{
-		//Use the filename specified by the user
-		fd = open(argv[2], O_WRONLY | O_EXCL | O_CREAT | O_BINARY, S_IRUSR);
-	}
+    //Use the filename specified by the user
+    fd = open(filename, O_WRONLY | O_EXCL | O_CREAT | O_BINARY, S_IRUSR);
+
 	//Did we get a valid file descriptor?
 	if (fd < 0)
 	{
@@ -126,12 +106,10 @@ int main(int argc, char *argv[]) {
 	currentloc = (sizeof(int) * filecount) + sizeof(int);	//Leave space at the begining for the header info
 
 	//Use the findfiles routine to pack in all the files
-	findfiles(argv[1], fd);
+	findfiles(path, fd);
 
 	//Close the file
 	close(fd);
-*/
-	return 0;
 }
 
 int getfilesize(char *filename) {
@@ -287,7 +265,10 @@ void showHelp()
     //customresource resource myresource.dat
     printf("Resource Packer\n\n");
     printf("Usage:\n");
-    printf("createres <folder> <filename>\n\n");
-    printf("<folder>    Frolder containing the images or sounds to pack.\n");
-    printf("<filename> Resource file name (optional)\n");
+    printf("createres <option> <option>\n\n");
+    printf("-f   Output file name\n");
+    printf("-p   Folder containing the images or sounds to pack.\n");
+    printf("-s   Show the files inside the resource file. (NOT AVAILABLE YET)\n")
+    printf("Example:\n");
+    printf("createres -f resources.dat -p DATA\n");
 }
