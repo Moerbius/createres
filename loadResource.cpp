@@ -1,15 +1,11 @@
 #include "stdio.h"
-#include "dirent.h"
-#include "sys/stat.h"
-#include "unistd.h"
 #include "fcntl.h"
-#include "sys/param.h"
 #include <cstring>
 #include <cstdlib>
 
 char *GetBufferFromResource(char *resourcefilename, char *resourcename, int *filesize)
 {
-  //Try to open the resource file in question
+	//Try to open the resource file in question
 	int fd = open(resourcefilename, O_RDONLY);
 	if (fd < 0)
 	{
