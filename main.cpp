@@ -268,7 +268,7 @@ void showHelp()
     printf("createres <option> <option>\n\n");
     printf("-f   Output file name\n");
     printf("-p   Folder containing the images or sounds to pack.\n");
-    printf("-s   Show the files inside the resource file. (NOT AVAILABLE YET)\n")
+    printf("-s   Show the files inside the resource file. (NOT AVAILABLE YET)\n");
     printf("Example:\n");
     printf("createres -f resources.dat -p DATA\n");
 }
