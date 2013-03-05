@@ -1,8 +1,7 @@
-
 ///
 ///    Load an image
 ///
-SDL_Surface *CResources::LoadBitmap(char *resourcefilename, char *bitmapfilename)
+SDL_Surface *LoadBitmap(char *resourcefilename, char *bitmapfilename)
 {
   //Get the bitmap's buffer and size from the resource file
 	int filesize = 0;
@@ -36,7 +35,7 @@ SDL_Surface *CResources::LoadBitmap(char *resourcefilename, char *bitmapfilename
 ///
 ///    Load a sound using Mix_Chunk
 ///
-Mix_Chunk *CResources::LoadSound(char *resourcefilename, char *soundfilename)
+Mix_Chunk *LoadSound(char *resourcefilename, char *soundfilename)
 {
 	//Get the sound's buffer and size from the resource file
 	int filesize = 0;
@@ -56,7 +55,7 @@ Mix_Chunk *CResources::LoadSound(char *resourcefilename, char *soundfilename)
 ///
 ///    Load a music using Mix_Music
 ///
-Mix_Music *CResources::LoadMusic(char *resourcefilename, char *soundfilename)
+Mix_Music *LoadMusic(char *resourcefilename, char *soundfilename)
 {
 	//Get the sound's buffer and size from the resource file
 	int filesize = 0;
