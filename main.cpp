@@ -6,6 +6,7 @@
 #include "sys/param.h"
 #include <cstring>
 #include <cstdlib>
+#include <ctype.h>
 
 /*
 BYTELOC      DATA        EXPLANATION
@@ -45,30 +46,45 @@ int main(int argc, char *argv[]) {
     char *filename;
     char *path;
 
-    if(argc != 5)
-    {
-        printf("Not enough arguments, please try again.\n\n");
+    int c;
+
+    if(argc == 1)
         showHelp();
-        exit(0);
-    }
-    else
+
+    while ((c = getopt(argc, argv, "hf:p:")) != -1)
     {
-        for(int i = 1; i < argc; i++)
+        switch (c)
         {
-            if(strcmp(argv[i], "-f") == 0)
-            {
-                filename = argv[i + 1];
-            }
-            else if(strcmp(argv[i], "-p") == 0)
-            {
-                path = argv[i + 1];
-            }
+        case 'h':
+            showHelp();
+            break;
+        case 'f':
+            filename = optarg;
+            break;
+        case 'p':
+            path = optarg;
+            break;
+        case '?':
+            if (optopt == ':')
+                fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+            else if (isprint(optopt))
+                fprintf(stderr, "Unknown option `-%c'.\n", optopt);
+            else
+                fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
+            exit(1);
+        default:
+            showHelp();
+            break;
         }
     }
 
-    pack(filename, path);
+    if(filename != NULL && path != NULL)
+        pack(filename, path);
 
-	return 0;
+    for (int index = optind; index < argc; index++)
+        printf ("Non-option argument %s\n", argv[index]);
+
+    return 0;
 }
 
 void pack(char *filename, char *path)
@@ -266,9 +282,10 @@ void showHelp()
     printf("Resource Packer\n\n");
     printf("Usage:\n");
     printf("createres <option> <option>\n\n");
-    printf("-f   Output file name\n");
-    printf("-p   Folder containing the images or sounds to pack.\n");
-    printf("-s   Show the files inside the resource file. (NOT AVAILABLE YET)\n");
+    printf("   -f   Output file name\n");
+    printf("   -p   Folder containing the images or sounds to pack.\n");
+    printf("   -s   Show the files inside the resource file. (NOT AVAILABLE YET)\n");
     printf("Example:\n");
-    printf("createres -f resources.dat -p DATA\n");
+    printf("   createres -f resources.dat -p DATA\n");
+    exit(0);
 }
