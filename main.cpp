@@ -8,6 +8,8 @@
 #include <cstdlib>
 #include <ctype.h>
 
+#define VERSION "1.0"
+
 /*
 BYTELOC      DATA        EXPLANATION
 *******      ****        ***********
@@ -279,7 +281,7 @@ void findfiles(char *path, int fd) {
 void showHelp()
 {
     //customresource resource myresource.dat
-    printf("Resource Packer\n\n");
+    printf("Resource Packer %s\n\n", VERSION);
     printf("Usage:\n");
     printf("createres <option> <option>\n\n");
     printf("   -f   Output file name\n");
