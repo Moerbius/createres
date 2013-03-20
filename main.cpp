@@ -3,14 +3,13 @@
 	#include "direntVC.h"
 	#include "getopt.h"
 	#include <io.h>
-#include <direct.h>
+	#include <direct.h>
+	#include <tchar.h>
 	#define MAXPATHLEN	MAX_PATH
-	#define MYCHAR		wchar_t
 #else
 	#include <dirent.h>
 	#include <sys/param.h>
 	#include <unistd.h>
-	#define MYCHAR		char
 #endif
 
 #include <stdio.h>
@@ -21,6 +20,7 @@
 #include <ctype.h>
 
 #define VERSION "2.0"
+#define ARGUMENTS "hf:p:"
 
 /*
 BYTELOC      DATA        EXPLANATION
@@ -56,27 +56,29 @@ void showFiles(char *filename);
 int currentfile = 1;	//This integer indicates what file we're currently adding to the resource.
 int currentloc = 0;	    //This integer references the current write-location within the resource file
 
-int main(int argc, MYCHAR *argv[]) {
-	
-	char *arguments = "hf:p:";
-
-// Need to convert char* to wchar_t*
 #ifdef _MSC_VER
-	wchar_t *argumentlist;
-	mbtowc(argumentlist, arguments, sizeof(arguments));
+int _tmain(int argc, TCHAR** argv)
+{
+	wchar_t *arguments = _T(ARGUMENTS);
+	wchar_t *filename;
+    wchar_t *path;
+
 #else
-	char *argumentlist = arguments;
+int main(int argc, char** argv)
+{
+	char *arguments = ARGUMENTS;
+	char *filename = NULL;
+    char *path = NULL;
 #endif
 
-    MYCHAR *filename;
-    MYCHAR *path;
-	
     int c;
 
     if(argc == 1)
         showHelp();
 
-	while ((c = getopt(argc, argv, argumentlist)) != -1)
+	c = getopt(argc, argv, arguments);
+
+	while (c != -1)
     {
         switch (c)
         {
@@ -101,10 +103,43 @@ int main(int argc, MYCHAR *argv[]) {
             showHelp();
             break;
         }
+
+		c = getopt(argc, argv, arguments);
     }
 
+#ifdef _MSC_VER
+
+	char newfilename[sizeof(filename)+5];
+	char newpath[sizeof(path)+5];
+
     if(filename != NULL && path != NULL)
-        pack((char *)filename, (char*)path);
+	{
+
+		int i = 0;
+
+		while(filename[i] != '\0')
+		{
+		newfilename[i] = (char)filename[i];
+		++i;
+		}
+		newfilename[i] = '\0';
+		i = 0;
+
+		while(path[i] != '\0')
+		{
+		newpath[i] = (char)path[i];
+		++i;
+		}
+		newpath[i] = '\0';
+
+		pack(newfilename, newpath);
+#else
+	if(filename != NULL && path != NULL)
+	{
+		pack(filename, path);
+#endif
+  
+	}
 
     for (int index = optind; index < argc; index++)
         printf ("Non-option argument %s\n", argv[index]);
