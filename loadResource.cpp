@@ -1,6 +1,8 @@
 
 #ifdef _MSC_VER
 	#include <io.h>
+#else
+    #include <unistd.h>
 #endif
 
 #include <stdio.h>
@@ -11,7 +13,7 @@
 char *GetBufferFromResource(char *resourcefilename, char *resourcename, int *filesize)
 {
 	//Try to open the resource file in question
-	int fd = _open(resourcefilename, O_RDONLY);
+	int fd = open(resourcefilename, O_RDONLY);
 	if (fd < 0)
 	{
 		perror("Error opening resource file");
@@ -19,15 +21,15 @@ char *GetBufferFromResource(char *resourcefilename, char *resourcename, int *fil
 	}
 
 	//Make sure we're at the beginning of the file
-	_lseek(fd, 0, SEEK_SET);
+	lseek(fd, 0, SEEK_SET);
 
 	//Read the first INT, which will tell us how many files are in this resource
 	int numfiles;
-	_read(fd, &numfiles, sizeof(int));
+	read(fd, &numfiles, sizeof(int));
 
 	//Get the pointers to the stored files
 	int *filestart = (int *) malloc(numfiles);
-	_read(fd, filestart, sizeof(int) * numfiles);
+	read(fd, filestart, sizeof(int) * numfiles);
 
 	//Loop through the files, looking for the file in question
 	int filenamesize;
@@ -37,14 +39,14 @@ char *GetBufferFromResource(char *resourcefilename, char *resourcename, int *fil
 	{
 		char *filename;
 		//Seek to the location
-		_lseek(fd, filestart[i], SEEK_SET);
+		lseek(fd, filestart[i], SEEK_SET);
 		//Get the filesize value
-		_read(fd, filesize, sizeof(int));
+		read(fd, filesize, sizeof(int));
 		//Get the size of the filename string
-		_read(fd, &filenamesize, sizeof(int));
+		read(fd, &filenamesize, sizeof(int));
 		//Size the buffer and read the filename
 		filename = (char *) malloc(filenamesize + 1);
-		_read(fd, filename, filenamesize);
+		read(fd, filename, filenamesize);
 		//Remember to terminate the string properly!
 		filename[filenamesize] = '\0';
 		//Compare to the string we're looking for
@@ -52,7 +54,7 @@ char *GetBufferFromResource(char *resourcefilename, char *resourcename, int *fil
 		{
 			//Get the contents of the file
 			buffer = (char *) malloc(*filesize);
-			_read(fd, buffer, *filesize);
+			read(fd, buffer, *filesize);
 			free(filename);
 			break;
 		}
@@ -64,7 +66,7 @@ char *GetBufferFromResource(char *resourcefilename, char *resourcename, int *fil
 	free(filestart);
 
 	//Close the resource file!
-	_close(fd);
+	close(fd);
 
 	//Did we find the file within the resource that we were looking for?
 	if (buffer == NULL)
