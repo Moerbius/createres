@@ -1,7 +1,7 @@
 
 #ifdef _MSC_VER
-	#include "direntVC.h"
-	#include "getopt.h"
+	#include "VC/direntVC.h"
+	#include "VC/getopt.h"
 	#include <io.h>
 	#include <direct.h>
 	#include <tchar.h>
