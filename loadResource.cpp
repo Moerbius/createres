@@ -12,6 +12,10 @@
 
 char *GetBufferFromResource(char *resourcefilename, char *resourcename, int *filesize)
 {
+#ifdef _MSC_VER
+	//Disable -> warning C4996: 'abc': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _abc. See online help for details.
+	#pragma warning (disable : 4996)
+#endif
 	//Try to open the resource file in question
 	int fd = open(resourcefilename, O_RDONLY);
 	if (fd < 0)

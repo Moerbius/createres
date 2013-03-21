@@ -19,7 +19,7 @@
 #include <cstdlib>
 #include <ctype.h>
 
-#define VERSION "2.0"
+#define VERSION "2.0.1"
 #define ARGUMENTS "hf:p:"
 
 /*
@@ -59,6 +59,9 @@ int currentloc = 0;	    //This integer references the current write-location wit
 #ifdef _MSC_VER
 int _tmain(int argc, TCHAR** argv)
 {
+	//Disable -> warning C4996: 'abc': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _abc. See online help for details.
+	#pragma warning (disable : 4996)
+
 	wchar_t *arguments = _T(ARGUMENTS);
 	wchar_t *filename;
     wchar_t *path;
