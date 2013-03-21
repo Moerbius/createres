@@ -1,4 +1,3 @@
-
 #ifdef _MSC_VER
 	#include "VC/direntVC.h"
 	#include "VC/getopt.h"
@@ -59,18 +58,18 @@ int currentloc = 0;	    //This integer references the current write-location wit
 #ifdef _MSC_VER
 int _tmain(int argc, TCHAR** argv)
 {
-	//Disable -> warning C4996: 'abc': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _abc. See online help for details.
-	#pragma warning (disable : 4996)
+    //Disable -> warning C4996: 'abc': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _abc. See online help for details.
+    #pragma warning (disable : 4996)
 
-	wchar_t *arguments = _T(ARGUMENTS);
-	wchar_t *filename;
+    wchar_t *arguments = _T(ARGUMENTS);
+    wchar_t *filename;
     wchar_t *path;
 
 #else
 int main(int argc, char** argv)
 {
-	char *arguments = ARGUMENTS;
-	char *filename = NULL;
+    char *arguments = ARGUMENTS;
+    char *filename = NULL;
     char *path = NULL;
 #endif
 
@@ -112,8 +111,8 @@ int main(int argc, char** argv)
 
 #ifdef _MSC_VER
 
-	char newfilename[sizeof(filename)+5];
-	char newpath[sizeof(path)+5];
+	char newfilename[255];
+	char newpath[255];
 
     if(filename != NULL && path != NULL)
 	{
