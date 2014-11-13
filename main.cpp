@@ -198,7 +198,7 @@ int getfilesize(char *filename) {
 	if(!stat(filename, &file))
 	{
 		//Return the file size
-		return file.st_size;
+		return (int)file.st_size;
 	}
 
 	//ERROR! Couldn't get the filesize.
@@ -272,7 +272,7 @@ void packfile(char *filename, int fd) {
 	totalsize += sizeof(int);
 
 	//Write the LENGTH of the NAME of the file
-	int filenamelen = strlen(filename);
+	int filenamelen = (int)strlen(filename);
 	write(fd, &filenamelen, sizeof(int));
 	totalsize += sizeof(int);
 
