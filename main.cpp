@@ -225,7 +225,7 @@ int countfiles(char *path) {
 	//Loop through all files and directories
 	while ( (entry = readdir(dir)) != NULL) {
 		//Don't bother with the .. and . directories
-		if ((strcmp(entry->d_name, ".") != 0) && (strcmp(entry->d_name, "..") != 0)) {
+		if ((strcmp(entry->d_name, ".") != 0) && (strcmp(entry->d_name, "..") != 0) && (strcmp(entry->d_name, ".DS_Store") != 0)) {
 			//Get the status info for the current file
 			if (stat(entry->d_name, &file_status) == 0) {
 				//Is this a directory, or a file?
@@ -312,7 +312,7 @@ void findfiles(char *path, int fd) {
 	//Loop through all files and directories
 	while ( (entry = readdir(dir)) != NULL) {
 		//Don't bother with the .. and . directories
-		if ((strcmp(entry->d_name, ".") != 0) && (strcmp(entry->d_name, "..") != 0)) {
+		if ((strcmp(entry->d_name, ".") != 0) && (strcmp(entry->d_name, "..") != 0) && (strcmp(entry->d_name, ".DS_Store") != 0)) {
 			//Get the status info for the current file
 			if (stat(entry->d_name, &file_status) == 0) {
 				//Is this a directory, or a file?
