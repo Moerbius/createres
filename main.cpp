@@ -68,7 +68,7 @@ int _tmain(int argc, TCHAR** argv)
 #else
 int main(int argc, char** argv)
 {
-    char *arguments = ARGUMENTS;
+    const char *arguments = ARGUMENTS;
     char *filename = NULL;
     char *path = NULL;
 #endif
