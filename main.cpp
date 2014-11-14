@@ -6,21 +6,16 @@
 #include <tchar.h>
 #define MAXPATHLEN	MAX_PATH
 #else
-#include <dirent.h>
-#include <sys/param.h>
 #include <unistd.h>
 #endif
 
 #include <stdio.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <cstring>
 #include <cstdlib>
 #include <ctype.h>
 
 #include "Resource.h"
 
-#define VERSION "2.1.0"
+#define VERSION "2.1.1"
 #define ARGUMENTS "hf:p:"
 
 void showHelp();
@@ -133,3 +128,4 @@ int _tmain(int argc, TCHAR** argv) {
             
             exit(0);
         }
+
