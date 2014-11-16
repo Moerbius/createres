@@ -15,25 +15,34 @@
 
 #include "Resource.h"
 
-#define VERSION "2.1.1"
-#define ARGUMENTS "hf:p:"
+#define VERSION "2.2.0"
+#define ARGUMENTS "hr:f:u:cl"
 
+void showList();
+void unpack(char *filename);
 void showHelp();
 
+
 #ifdef _MSC_VER
+
+wchar_t *resourcename;
+wchar_t *folder;
+
 int _tmain(int argc, TCHAR** argv) {
     //Disable -> warning C4996: 'abc': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _abc. See online help for details.
 #pragma warning (disable : 4996)
     
     wchar_t *arguments = _T(ARGUMENTS);
-    wchar_t *filename;
-    wchar_t *path;
+    
     
 #else
+    
+    char *resourcename = NULL;
+    char *folder = NULL;
+    
     int main(int argc, char** argv) {
         const char *arguments = ARGUMENTS;
-        char *filename = NULL;
-        char *path = NULL;
+        
 #endif
         // Our Resource Class
         Resource resources;
@@ -52,11 +61,20 @@ int _tmain(int argc, TCHAR** argv) {
                 case 'h':
                     showHelp();
                     break;
-                case 'f':
-                    filename = optarg;
+                case 'r':
+                    resourcename = optarg;
                     break;
-                case 'p':
-                    path = optarg;
+                case 'f':
+                    folder = optarg;
+                    break;
+                case 'l':
+                    showList();
+                    break;
+                case 'c':
+                    resources.compress = 1;
+                    break;
+                case 'u':
+                    unpack(optarg);
                     break;
                 case '?':
                     if (optopt == ':')
@@ -101,9 +119,9 @@ int _tmain(int argc, TCHAR** argv) {
             
             resources.pack(newfilename, newpath);
 #else
-            if(filename != NULL && path != NULL)
+            if(resourcename != NULL && folder != NULL)
             {
-                resources.pack(filename, path);
+                resources.pack(resourcename, folder);
 #endif
                 
             }
@@ -114,17 +132,47 @@ int _tmain(int argc, TCHAR** argv) {
             return 0;
         }
         
+        void unpack(char *filename) {
+            int fd;
+            int filesize;
+            Resource resources;
+            
+            printf("Unpacking file: %s\n", filename);
+            
+            fd = open(filename, O_WRONLY | O_EXCL | O_CREAT, S_IRUSR);
+            
+            write(fd, resources.unpack(resourcename, filename, &filesize), filesize);
+            
+            close(fd);
+            
+            printf("Done!\n");
+            
+        }
+        
+        void showList() {
+            
+            printf("\nAqui fica a listagem de ficheiros\n");
+            
+            if(resourcename != NULL) {
+                
+            }
+        }
+        
         void showHelp() {
-            //customresource resource myresource.dat
-            printf("Resource Packer %s\n\n", VERSION);
+            printf("\n");
+            printf("Resource Packer %s\n", VERSION);
+            printf("Copyright 2014 by Moerbius\n\n");
             printf("Usage:\n");
-            printf("createres <option> <option>\n\n");
-            printf("   -f   Output file name\n");
-            printf("   -p   Folder containing the images or sounds to pack.\n");
-            printf("   -c   Compress the files. (NOT AVAILABLE YET)\n");
-            printf("   -s   Show the files inside the resource file. (NOT AVAILABLE YET)\n");
+            printf("createres <options>\n\n");
+            printf("   -h                  This help\n");
+            printf("   -r <resource name>  Resource file name\n");
+            printf("   -f <folder name>    Folder containing the images or sounds to pack.\n");
+            printf("   -u <file name>      File to unpack from resource.\n");
+            printf("   -c                  Compress the files. (NOT AVAILABLE YET)\n");
+            printf("   -l                  Lists all files inside the resource. (NOT AVAILABLE YET)\n\n");
             printf("Example:\n");
-            printf("   createres -f resources.dat -p DATA\n");
+            printf("   createres -r resources.dat -u image1.bmp\n");
+            printf("   createres -r resources.dat -f DATA\n\n");
             
             exit(0);
         }
