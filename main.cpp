@@ -97,8 +97,7 @@ int _tmain(int argc, TCHAR** argv) {
         char newfilename[255];
         char newpath[255];
         
-        if(filename != NULL && path != NULL)
-        {
+        if(filename != NULL && path != NULL) {
             
             int i = 0;
             
@@ -150,11 +149,15 @@ int _tmain(int argc, TCHAR** argv) {
         }
         
         void showList() {
-            
-            printf("\nAqui fica a listagem de ficheiros\n");
-            
+
             if(resourcename != NULL) {
                 
+                Resource resources;
+
+                resources.listFiles(resourcename);
+            }
+            else {
+                printf("Must specify a resource filename.");
             }
         }
         
