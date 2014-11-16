@@ -42,7 +42,13 @@
 #include <cstdlib>
 
 #include <stdio.h>
+#include <iostream>
 #include <fstream>
+#include <string>
+#include <vector>
+#include <iomanip>
+
+using namespace std;
 
 class Resource {
     
@@ -52,6 +58,7 @@ class Resource {
         void pack(char *filename, char *path);
         char *unpack(char *resourcefilename, char *resourcename, int *filesize);
         int compress;       //Indicates either to use compression or not
+        void listFiles(char *resourcename);
     
     private:
         int getfilesize(char *filename);
@@ -59,6 +66,7 @@ class Resource {
         void packfile(char *filename, int fd);
         void findfiles(char *path, int fd);
         void showFiles(char *filename);
+        int chartoint(char *value);
     
         int currentfile;	//This integer indicates what file we're currently adding to the resource.
         int currentloc;	    //This integer references the current write-location within the resource file
