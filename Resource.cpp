@@ -4,6 +4,7 @@
 Resource::Resource() {
     currentfile = 1;	//This integer indicates what file we're currently adding to the resource.
     currentloc = 0;	    //This integer references the current write-location within the resource file
+    compress = 0x55;       //Indicates either to use compression or not. 0 -> not compressed, 1 -> compressed
 };
 
 Resource::~Resource() {
@@ -29,19 +30,47 @@ void Resource::pack(char *filename, char *path) {
     fd = open(filename, O_WRONLY | O_EXCL | O_CREAT, S_IRUSR);
     
     //Did we get a valid file descriptor?
-    if (fd < 0)
-    {
-        //Can't create the file for some reason (possibly because the file already exists)
-        perror("Cannot create resource file");
-        exit(1);
+    if (fd < 0) {
+        if (errno == EEXIST) {
+            
+            close(fd);
+            
+            int removestatus = remove(filename);
+            
+            if( removestatus == 0 ) {
+                fd = open(filename, O_WRONLY | O_EXCL | O_CREAT, S_IRUSR);
+                
+                if(fd < 0) {
+                    perror("Error creating the file");
+                    exit(1);
+                }
+            }
+            else
+            {
+                printf("Unable to delete the file");
+                perror("Error");
+            }
+        }
+        else {
+            perror("Error creating the file");
+            exit(1);
+        }
     }
+    
+    //Write the compressin flag
+    write(fd, &compress, sizeof(int));
+    
+    //Advance to next position
+    //lseek(fd, sizeof(int)*2, SEEK_SET);
     
     //Write the total number of files as the first integer
     write(fd, &filecount, sizeof(int));
     
+    //lseek(fd, sizeof(int), SEEK_SET);
+    
     //Set the current conditions
     currentfile = 1;					//Start off by storing the first file, obviously!
-    currentloc = (sizeof(int) * filecount) + sizeof(int);	//Leave space at the begining for the header info
+    currentloc = (sizeof(int) * filecount) + (sizeof(int)*2);	//Leave space at the begining for the header info
     
     //Use the findfiles routine to pack in all the files
     findfiles(path, fd);
@@ -49,6 +78,82 @@ void Resource::pack(char *filename, char *path) {
     //Close the file
     close(fd);
 }
+
+char *Resource::unpack(char *resourcefilename, char *resourcename, int *filesize) {
+    
+#ifdef _MSC_VER
+    //Disable -> warning C4996: 'abc': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _abc. See online help for details.
+#pragma warning (disable : 4996)
+#endif
+    //Try to open the resource file in question
+    int fd = open(resourcefilename, O_RDONLY);
+    if (fd < 0)
+    {
+        perror("Error opening resource file");
+        exit(1);
+    }
+    
+    //Make sure we're at the beginning of the file
+    lseek(fd, 0, SEEK_SET);
+    
+    //Get the compress flag
+    read(fd, &compress, sizeof(int));
+    
+    //Read the first INT, which will tell us how many files are in this resource
+    int numfiles;
+    read(fd, &numfiles, sizeof(int));
+    
+    //Get the pointers to the stored files
+    int *filestart = (int *) malloc(numfiles);
+    read(fd, filestart, sizeof(int) * numfiles);
+    
+    //Loop through the files, looking for the file in question
+    int filenamesize;
+    char *buffer;
+    int i;
+    for(i=0;i<numfiles;i++)
+    {
+        char *filename;
+        //Seek to the location
+        lseek(fd, filestart[i], SEEK_SET);
+        //Get the filesize value
+        read(fd, filesize, sizeof(int));
+        //Get the size of the filename string
+        read(fd, &filenamesize, sizeof(int));
+        //Size the buffer and read the filename
+        filename = (char *) malloc(filenamesize + 1);
+        read(fd, filename, filenamesize);
+        //Remember to terminate the string properly!
+        filename[filenamesize] = '\0';
+        //Compare to the string we're looking for
+        if (strcmp(filename, resourcename) == 0)
+        {
+            //Get the contents of the file
+            buffer = (char *) malloc(*filesize);
+            read(fd, buffer, *filesize);
+            free(filename);
+            break;
+        }
+        //Free the filename buffer
+        free(filename);
+    }
+    
+    //Release memory
+    free(filestart);
+    
+    //Close the resource file!
+    close(fd);
+    
+    //Did we find the file within the resource that we were looking for?
+    if (buffer == NULL)
+    {
+        printf("Unable to find '%s' in the resource file!\n", resourcename);
+        exit(1);
+    }
+    
+    //Return the buffer
+    return buffer;
+};
 
 int Resource::getfilesize(char *filename) {
     
@@ -120,7 +225,7 @@ void Resource::packfile(char *filename, int fd) {
     printf("PACKING: '%s' SIZE: %i\n", filename, getfilesize(filename));
     
     //In the 'header' area of the resource, write the location of the file about to be added
-    lseek(fd, currentfile * sizeof(int), SEEK_SET);
+    lseek(fd, currentfile * sizeof(int) + sizeof(int), SEEK_SET);
     write(fd, &currentloc, sizeof(int));
     
     //Seek to the location where we'll be storing this new file info
