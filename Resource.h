@@ -42,7 +42,7 @@
 #include <cstdlib>
 
 #include <stdio.h>
-
+#include <fstream>
 
 class Resource {
     
@@ -50,6 +50,8 @@ class Resource {
         Resource();
         ~Resource();
         void pack(char *filename, char *path);
+        char *unpack(char *resourcefilename, char *resourcename, int *filesize);
+        int compress;       //Indicates either to use compression or not
     
     private:
         int getfilesize(char *filename);
