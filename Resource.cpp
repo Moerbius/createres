@@ -155,6 +155,69 @@ char *Resource::unpack(char *resourcefilename, char *resourcename, int *filesize
     return buffer;
 };
 
+void Resource::listFiles(char *resourcename) {
+    
+    vector<string> result;
+    //char *data;
+    int compression;        //indicates if the resource file uses compression
+    int numfiles;           //Number of files inside resource
+    int position;
+    vector<int> positions;  //Position vector of all files
+    int size;
+    vector<int> sizes;
+    int strsize;
+    vector<int> strsizes;   //Size vector of all files
+    char *name;
+    vector<char*> names;   //Names vector of all files
+    
+    //Open the file for reading
+    ifstream file (resourcename, ios::in | ios::binary);
+    if(file.is_open()) {
+        
+        //Compressin flag
+        file.seekg(0, ios::beg);
+        file.read(reinterpret_cast<char*>(&compression), sizeof(int));
+        
+        //Number of files
+        file.read(reinterpret_cast<char*>(&numfiles), sizeof(int));
+        
+        //Gets the start byte positin of each file
+        for (int i = 0; i < numfiles; i++) {
+            file.read(reinterpret_cast<char*>(&position), sizeof(int));
+            positions.push_back(position);
+        }
+        
+        //Get the size, filename size and filename
+        for (int i = 0; i < positions.size(); i++) {
+            file.seekg(positions[i]);
+            file.read(reinterpret_cast<char*>(&size), sizeof(int));
+            file.read(reinterpret_cast<char*>(&strsize), sizeof(int));
+            name = new char[strsize];
+            file.read((name), strsize);
+            
+            sizes.push_back(size);
+            strsizes.push_back(strsize);
+            names.push_back(name);
+        }
+        
+        file.close();
+        
+    }
+    else {
+        cout << "Could not open the file " << resourcename << endl;
+    }
+    
+    cout << "Compression: " << (compression == 0 ? "No" : "Yes") << endl;
+    cout << "     #files: " << numfiles << endl << endl;;
+    cout << "       filename       | file size | position " << endl;
+    cout << "----------------------|-----------|----------" << endl;
+    
+    for (int i = 0; i < numfiles; i++) {
+        cout << setw(21) << names[i] << " | " << setw(9) << sizes[i] << " | " << positions[i] << endl;
+    }
+    
+}
+
 int Resource::getfilesize(char *filename) {
     
     struct stat file;	//This structure will be used to query file status
@@ -302,4 +365,22 @@ void Resource::findfiles(char *path, int fd) {
     
     return;
 }
+
+
+
+
+
+
+int Resource::chartoint(char *value) {
+    
+    //if(sizeof(value) < sizeof(int)) {
+        return (value[3] << 24) | (value[2] << 16) | (value[1] << 8) | (value[0]);
+    /*}
+    else {
+        printf("Value too big to convert to int\n");
+        return -1;
+    }*/
+    
+}
+
 
