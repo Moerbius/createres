@@ -71,7 +71,7 @@ int _tmain(int argc, TCHAR** argv) {
                     showList();
                     break;
                 case 'c':
-                    resources.compress = 1;
+                    //resources.compress = 1;
                     break;
                 case 'u':
                     unpack(optarg);
@@ -127,7 +127,7 @@ int _tmain(int argc, TCHAR** argv) {
             
             for (int index = optind; index < argc; index++)
                 printf ("Non-option argument %s\n", argv[index]);
-            
+                        
             return 0;
         }
         

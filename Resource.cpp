@@ -2,9 +2,14 @@
 #include "Resource.h"
 
 Resource::Resource() {
+    
+    compresslloc = 0x00;
+    numfilesloc = 0x04;
+    firstfileloc = 0;
+    
     currentfile = 1;	//This integer indicates what file we're currently adding to the resource.
     currentloc = 0;	    //This integer references the current write-location within the resource file
-    compress = 0x55;       //Indicates either to use compression or not. 0 -> not compressed, 1 -> compressed
+    compress = 0;       //Indicates either to use compression or not. 0 -> not compressed, 1 -> compressed
 };
 
 Resource::~Resource() {
@@ -308,14 +313,42 @@ void Resource::packfile(char *filename, int fd) {
     write(fd, filename, strlen(filename));
     totalsize += strlen(filename);
     
-    //Write the file contents
-    int fd_read = open(filename, O_RDONLY);		//Open the file
-    char *buffer = (char *) malloc(filesize);	//Create a buffer for its contents
-    read(fd_read, buffer, filesize);		//Read the contents into the buffer
-    write(fd, buffer, filesize);			//Write the buffer to the resource file
-    close(fd_read);					//Close the file
-    free(buffer);					//Free the buffer
-    totalsize += filesize;				//Add the file size to the total number of bytes written
+    
+
+    
+    if(compress == 0) {
+        
+        //Write the file contents
+        int fd_read = open(filename, O_RDONLY);		//Open the file
+        char *buffer = (char *) malloc(filesize);	//Create a buffer for its contents
+        read(fd_read, buffer, filesize);            //Read the contents into the buffer
+        
+        write(fd, buffer, filesize);                //Write the buffer to the resource file
+        close(fd_read);                             //Close the file
+        free(buffer);                               //Free the buffer
+        totalsize += filesize;                      //Add the file size to the total number of bytes written
+    }
+    else {
+        // IMPLEMENT THE COMPRESSION HERE
+        /*int fd_read = open(filename, O_RDONLY);		//Open the file
+        char *buffer = (char *) malloc(filesize);	//Create a buffer for its contents
+        read(fd_read, buffer, filesize);
+        
+        string output, input;
+        input = (string)buffer;
+        snappy::Compress(input.data(), input.size(), &output);
+        
+        free(buffer);
+        buffer = (char *) malloc(output.length());
+        buffer = reinterpret_cast<char*>(&output);
+        
+        write(fd, buffer, filesize);                //Write the buffer to the resource file
+        close(fd_read);                             //Close the file
+        free(buffer);                               //Free the buffer
+        totalsize += filesize;                      //Add the file size to the total number of bytes written*/
+    }
+    
+    
     
     //Increment the currentloc and current file values
     currentfile++;
