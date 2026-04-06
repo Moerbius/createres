@@ -182,6 +182,8 @@ void Resource::listFiles(char *resourcename) {
     vector<int> positions;  //Position vector of all files
     int size;
     vector<int> sizes;
+    int stored_size;
+    vector<int> stored_sizes;
     int strsize;
     vector<int> strsizes;   //Size vector of all files
     char *name;
@@ -216,8 +218,10 @@ void Resource::listFiles(char *resourcename) {
             // Skip the compressed_size field (needed for unpacking but not displayed)
             int compressed_size;
             file.read(reinterpret_cast<char*>(&compressed_size), sizeof(int));
+            stored_size = compressed_size;
             
             sizes.push_back(size);
+            stored_sizes.push_back(stored_size);
             strsizes.push_back(strsize);
             names.push_back(name);
         }
@@ -231,11 +235,20 @@ void Resource::listFiles(char *resourcename) {
     
     cout << "Compression: " << (compression == 0 ? "No" : "Yes") << endl;
     cout << "     #files: " << numfiles << endl << endl;;
-    cout << "       filename       | file size | position " << endl;
-    cout << "----------------------|-----------|----------" << endl;
+    cout << "       filename       | orig size | stored size | ratio | position " << endl;
+    cout << "----------------------|-----------|-------------|-------|----------" << endl;
     
     for (int i = 0; i < numfiles; i++) {
-        cout << setw(21) << names[i] << " | " << setw(9) << sizes[i] << " | " << positions[i] << endl;
+        int ratio = 0;
+        if (sizes[i] > 0) {
+            ratio = (stored_sizes[i] * 100) / sizes[i];
+        }
+
+        cout << setw(21) << names[i]
+             << " | " << setw(9) << sizes[i]
+             << " | " << setw(11) << stored_sizes[i]
+             << " | " << setw(3) << ratio << "%"
+             << " | " << positions[i] << endl;
     }
 
     for (int i = 0; i < numfiles; i++) {
