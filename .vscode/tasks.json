@@ -30,11 +30,7 @@
     {
       "label": "Build (Windows - MSYS64)",
       "type": "shell",
-      "command": "bash",
-      "args": [
-        "-c",
-        "make -f Makefile.win32 clean && make -f Makefile.win32"
-      ],
+      "command": "export PATH=/mingw64/bin:$PATH && cd \"$(cygpath -u '${workspaceFolder}')\" && make clean all PLATFORM=win32",
       "group": {
         "kind": "build"
       },
@@ -46,27 +42,19 @@
       },
       "problemMatcher": "$gcc",
       "isBackground": false,
-      "windows": {
-        "options": {
-          "shell": {
-            "executable": "C:\\msys64\\usr\\bin\\bash.exe",
-            "args": [
-              "--login",
-              "-i",
-              "-c"
-            ]
-          }
+      "options": {
+        "shell": {
+          "executable": "C:\\msys64\\usr\\bin\\bash.exe",
+          "args": [
+            "-lc"
+          ]
         }
       }
     },
     {
       "label": "Build Release (Windows - MSYS64)",
       "type": "shell",
-      "command": "bash",
-      "args": [
-        "-c",
-        "make -f Makefile.win32 CXX=g++ CXXFLAGS=\"-std=c++11 -Wall -Wextra -pedantic -DHAVE_CONFIG_H -DWIN32_CONFIG -O2\""
-      ],
+      "command": "export PATH=/mingw64/bin:$PATH && cd \"$(cygpath -u '${workspaceFolder}')\" && make clean all PLATFORM=win32 CXX=g++ CXXFLAGS='-std=c++11 -Wall -Wextra -pedantic -DHAVE_CONFIG_H -DWIN32_CONFIG -O2'",
       "group": {
         "kind": "build"
       },
@@ -77,16 +65,12 @@
         "panel": "shared"
       },
       "isBackground": false,
-      "windows": {
-        "options": {
-          "shell": {
-            "executable": "C:\\msys64\\usr\\bin\\bash.exe",
-            "args": [
-              "--login",
-              "-i",
-              "-c"
-            ]
-          }
+      "options": {
+        "shell": {
+          "executable": "C:\\msys64\\usr\\bin\\bash.exe",
+          "args": [
+            "-lc"
+          ]
         }
       }
     },

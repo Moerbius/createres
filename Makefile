@@ -6,10 +6,13 @@ CXXFLAGS ?= -std=c++11 -Wall -Wextra -pedantic -DHAVE_CONFIG_H
 # Detect platform
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
-    PLATFORM := linux
+	PLATFORM := linux
+endif
+ifneq (,$(filter MINGW% MSYS% CYGWIN%,$(UNAME_S)))
+	PLATFORM := win32
 endif
 ifeq ($(OS),Windows_NT)
-    PLATFORM := win32
+	PLATFORM := win32
 endif
 ifndef PLATFORM
     $(warning Platform detection inconclusive, defaulting to linux)
@@ -20,6 +23,9 @@ SRC_DIR := src
 BUILD_DIR := build
 OBJ_DIR := $(BUILD_DIR)/obj
 TARGET := $(BUILD_DIR)/createres
+ifeq ($(PLATFORM),win32)
+	TARGET := $(BUILD_DIR)/createres.exe
+endif
 
 SOURCES := \
 	$(SRC_DIR)/main.cpp \
@@ -32,11 +38,20 @@ OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(filter %.cpp,$(SOURCES))
 OBJECTS += $(patsubst $(SRC_DIR)/%.cc,$(OBJ_DIR)/%.o,$(filter %.cc,$(SOURCES)))
 
 CPPFLAGS ?= -I$(SRC_DIR)/snappy
+ifeq ($(PLATFORM),win32)
+	CPPFLAGS += -DWIN32_CONFIG
+endif
 
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS) | $(BUILD_DIR)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(OBJECTS) -o $@
+	@if [ "$(PLATFORM)" = "win32" ]; then \
+		echo "Copying MinGW runtime DLLs to $(BUILD_DIR)..."; \
+		for dll in $$(ldd $@ 2>/dev/null | awk '/=> \/mingw64\// {print $$3}'); do \
+			cp -f "$$dll" "$(BUILD_DIR)/"; \
+		done; \
+	fi
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
 	mkdir -p $(dir $@)
