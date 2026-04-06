@@ -1,0 +1,23 @@
+{
+  "C_Cpp.default.cppStandard": "c++11",
+  "C_Cpp.default.cStandard": "c99",
+  "C_Cpp.intelliSenseEngine": "default",
+  "files.exclude": {
+    "**/build": false,
+    "**/.git": true
+  },
+  "search.exclude": {
+    "**/build": true,
+    "**/node_modules": true
+  },
+  "editor.formatOnSave": false,
+  "editor.defaultFormatter": "ms-vscode.cpptools",
+  "[cpp]": {
+    "editor.defaultFormatter": "ms-vscode.cpptools",
+    "editor.formatOnSave": false
+  },
+  "[c]": {
+    "editor.defaultFormatter": "ms-vscode.cpptools",
+    "editor.formatOnSave": false
+  }
+}

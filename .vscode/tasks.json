@@ -1,0 +1,136 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build (Linux)",
+      "type": "shell",
+      "command": "make",
+      "args": [
+        "clean",
+        "&&",
+        "make"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared",
+        "showReuseMessage": true
+      },
+      "problemMatcher": "$gcc",
+      "isBackground": false,
+      "windows": {
+        "command": "bash"
+      }
+    },
+    {
+      "label": "Build (Windows - MSYS64)",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-c",
+        "make -f Makefile.win32 clean && make -f Makefile.win32"
+      ],
+      "group": {
+        "kind": "build"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      },
+      "problemMatcher": "$gcc",
+      "isBackground": false,
+      "windows": {
+        "options": {
+          "shell": {
+            "executable": "C:\\msys64\\usr\\bin\\bash.exe",
+            "args": [
+              "--login",
+              "-i",
+              "-c"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "label": "Build Release (Windows - MSYS64)",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-c",
+        "make -f Makefile.win32 CXX=g++ CXXFLAGS=\"-std=c++11 -Wall -Wextra -pedantic -DHAVE_CONFIG_H -DWIN32_CONFIG -O2\""
+      ],
+      "group": {
+        "kind": "build"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      },
+      "isBackground": false,
+      "windows": {
+        "options": {
+          "shell": {
+            "executable": "C:\\msys64\\usr\\bin\\bash.exe",
+            "args": [
+              "--login",
+              "-i",
+              "-c"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "label": "Clean",
+      "type": "shell",
+      "command": "make",
+      "args": [
+        "clean"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      },
+      "isBackground": false,
+      "windows": {
+        "command": "bash"
+      }
+    },
+    {
+      "label": "Run",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/createres",
+      "args": [
+        "-h"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "isBackground": false,
+      "dependsOn": [
+        "Build (Linux)"
+      ],
+      "windows": {
+        "command": "${workspaceFolder}/build/createres.exe",
+        "dependsOn": [
+          "Build (Windows - MSYS64)"
+        ]
+      }
+    }
+  ]
+}

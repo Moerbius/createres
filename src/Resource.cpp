@@ -86,10 +86,6 @@ void Resource::pack(char *filename, char *path) {
 
 char *Resource::unpack(char *resourcefilename, char *resourcename, int *filesize) {
     
-#ifdef _MSC_VER
-    //Disable -> warning C4996: 'abc': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _abc. See online help for details.
-#pragma warning (disable : 4996)
-#endif
     //Try to open the resource file in question
     int fd = open(resourcefilename, O_RDONLY);
     if (fd < 0)
@@ -109,19 +105,19 @@ char *Resource::unpack(char *resourcefilename, char *resourcename, int *filesize
     read(fd, &numfiles, sizeof(int));
     
     //Get the pointers to the stored files
-    int *filestart = (int *) malloc(numfiles);
+    int *filestart = (int *) malloc(sizeof(int) * numfiles);
     read(fd, filestart, sizeof(int) * numfiles);
     
     //Loop through the files, looking for the file in question
     int filenamesize;
-    char *buffer;
+    char *buffer = NULL;
     int i;
     for(i=0;i<numfiles;i++)
     {
         char *filename;
         //Seek to the location
         lseek(fd, filestart[i], SEEK_SET);
-        //Get the filesize value
+        //Get the filesize value (original uncompressed)
         read(fd, filesize, sizeof(int));
         //Get the size of the filename string
         read(fd, &filenamesize, sizeof(int));
@@ -133,9 +129,27 @@ char *Resource::unpack(char *resourcefilename, char *resourcename, int *filesize
         //Compare to the string we're looking for
         if (strcmp(filename, resourcename) == 0)
         {
-            //Get the contents of the file
-            buffer = (char *) malloc(*filesize);
-            read(fd, buffer, *filesize);
+            //Read the compressed size
+            int compressed_size;
+            read(fd, &compressed_size, sizeof(int));
+            
+            if(compress == 0) {
+                //Read uncompressed contents
+                buffer = (char *) malloc(*filesize);
+                read(fd, buffer, compressed_size);
+            }
+            else {
+                //Read compressed contents and decompress
+                char *compressed_buffer = (char *) malloc(compressed_size);
+                read(fd, compressed_buffer, compressed_size);
+                
+                std::string uncompressed;
+                snappy::Uncompress(compressed_buffer, compressed_size, &uncompressed);
+                
+                buffer = (char *) malloc(*filesize);
+                memcpy(buffer, uncompressed.data(), *filesize);
+                free(compressed_buffer);
+            }
             free(filename);
             break;
         }
@@ -162,8 +176,6 @@ char *Resource::unpack(char *resourcefilename, char *resourcename, int *filesize
 
 void Resource::listFiles(char *resourcename) {
     
-    vector<string> result;
-    //char *data;
     int compression;        //indicates if the resource file uses compression
     int numfiles;           //Number of files inside resource
     int position;
@@ -193,12 +205,17 @@ void Resource::listFiles(char *resourcename) {
         }
         
         //Get the size, filename size and filename
-        for (int i = 0; i < positions.size(); i++) {
+        for (size_t i = 0; i < positions.size(); i++) {
             file.seekg(positions[i]);
             file.read(reinterpret_cast<char*>(&size), sizeof(int));
             file.read(reinterpret_cast<char*>(&strsize), sizeof(int));
-            name = new char[strsize];
+            name = new char[strsize + 1];
             file.read((name), strsize);
+            name[strsize] = '\0';
+            
+            // Skip the compressed_size field (needed for unpacking but not displayed)
+            int compressed_size;
+            file.read(reinterpret_cast<char*>(&compressed_size), sizeof(int));
             
             sizes.push_back(size);
             strsizes.push_back(strsize);
@@ -219,6 +236,10 @@ void Resource::listFiles(char *resourcename) {
     
     for (int i = 0; i < numfiles; i++) {
         cout << setw(21) << names[i] << " | " << setw(9) << sizes[i] << " | " << positions[i] << endl;
+    }
+
+    for (int i = 0; i < numfiles; i++) {
+        delete[] names[i];
     }
     
 }
@@ -315,38 +336,33 @@ void Resource::packfile(char *filename, int fd) {
     
     
 
+    // Read the file contents
+    int fd_read = open(filename, O_RDONLY);
+    char *buffer = (char *) malloc(filesize);
+    read(fd_read, buffer, filesize);
+    close(fd_read);
     
     if(compress == 0) {
-        
-        //Write the file contents
-        int fd_read = open(filename, O_RDONLY);		//Open the file
-        char *buffer = (char *) malloc(filesize);	//Create a buffer for its contents
-        read(fd_read, buffer, filesize);            //Read the contents into the buffer
-        
-        write(fd, buffer, filesize);                //Write the buffer to the resource file
-        close(fd_read);                             //Close the file
-        free(buffer);                               //Free the buffer
-        totalsize += filesize;                      //Add the file size to the total number of bytes written
+        // Write uncompressed file contents
+        int compressed_size = filesize;
+        write(fd, &compressed_size, sizeof(int));
+        write(fd, buffer, filesize);
+        totalsize += sizeof(int) + filesize;
     }
     else {
-        // IMPLEMENT THE COMPRESSION HERE
-        /*int fd_read = open(filename, O_RDONLY);		//Open the file
-        char *buffer = (char *) malloc(filesize);	//Create a buffer for its contents
-        read(fd_read, buffer, filesize);
+        // Compress using Snappy
+        std::string compressed;
+        snappy::Compress(buffer, filesize, &compressed);
         
-        string output, input;
-        input = (string)buffer;
-        snappy::Compress(input.data(), input.size(), &output);
+        int compressed_size = (int)compressed.size();
+        write(fd, &compressed_size, sizeof(int));
+        write(fd, compressed.data(), compressed_size);
+        totalsize += sizeof(int) + compressed_size;
         
-        free(buffer);
-        buffer = (char *) malloc(output.length());
-        buffer = reinterpret_cast<char*>(&output);
-        
-        write(fd, buffer, filesize);                //Write the buffer to the resource file
-        close(fd_read);                             //Close the file
-        free(buffer);                               //Free the buffer
-        totalsize += filesize;                      //Add the file size to the total number of bytes written*/
+        printf("   Compressed from %d to %d bytes\n", filesize, compressed_size);
     }
+    
+    free(buffer);
     
     
     

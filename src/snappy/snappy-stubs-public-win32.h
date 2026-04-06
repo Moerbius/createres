@@ -25,18 +25,29 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+// Windows type stubs for the open-source version of Snappy.
 
-#include <algorithm>
-#include <string>
+#ifndef THIRD_PARTY_SNAPPY_OPENSOURCE_SNAPPY_STUBS_PUBLIC_WIN32_H_
+#define THIRD_PARTY_SNAPPY_OPENSOURCE_SNAPPY_STUBS_PUBLIC_WIN32_H_
 
-#include "snappy-stubs-internal.h"
+#include <cstddef>
+#include <cstdint>
+
+#define SNAPPY_MAJOR 1
+#define SNAPPY_MINOR 2
+#define SNAPPY_PATCHLEVEL 2
+#define SNAPPY_VERSION \
+    ((SNAPPY_MAJOR << 16) | (SNAPPY_MINOR << 8) | SNAPPY_PATCHLEVEL)
 
 namespace snappy {
 
-void Varint::Append32(string* s, uint32 value) {
-  char buf[Varint::kMax32];
-  const char* p = Varint::Encode32(buf, value);
-  s->append(buf, p - buf);
-}
+// Windows doesn't have sys/uio.h, so define iovec structure
+struct iovec {
+  void* iov_base;
+  size_t iov_len;
+};
 
 }  // namespace snappy
+
+#endif  // THIRD_PARTY_SNAPPY_OPENSOURCE_SNAPPY_STUBS_PUBLIC_WIN32_H_

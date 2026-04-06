@@ -32,20 +32,13 @@
 #ifndef __createres__Resource__
 #define __createres__Resource__
 
-#ifdef _MSC_VER
-#include "VC/direntVC.h"
-#include <io.h>
-#include <direct.h>
-#include <tchar.h>
-#define MAXPATHLEN	MAX_PATH
-#else
 #include <dirent.h>
 #include <sys/param.h>
 #include <unistd.h>
-#endif
 
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <cerrno>
 #include <cstring>
 #include <cstdlib>
 
@@ -56,7 +49,7 @@
 #include <vector>
 #include <iomanip>
 
-#include "snappy.h"
+#include "snappy/snappy.h"
 
 using namespace std;
 
