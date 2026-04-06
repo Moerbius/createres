@@ -125,11 +125,14 @@ int main(int argc, char** argv) {
             if(resourcename != NULL) {
                 
                 Resource resources;
-
-                resources.listFiles(resourcename);
+                int status = resources.listFiles(resourcename);
+                if (status != 0) {
+                    exit(1);
+                }
             }
             else {
                 printf("Must specify a resource filename.");
+                exit(1);
             }
         }
         

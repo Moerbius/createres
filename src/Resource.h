@@ -61,7 +61,7 @@ class Resource {
         void pack(char *filename, char *path);
         char *unpack(char *resourcefilename, char *resourcename, int *filesize);
         int compress;       //Indicates either to use compression or not
-        void listFiles(char *resourcename);
+        int listFiles(char *resourcename);
     
     private:
         int getfilesize(char *filename);

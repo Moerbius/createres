@@ -174,10 +174,10 @@ char *Resource::unpack(char *resourcefilename, char *resourcename, int *filesize
     return buffer;
 };
 
-void Resource::listFiles(char *resourcename) {
+int Resource::listFiles(char *resourcename) {
     
-    int compression;        //indicates if the resource file uses compression
-    int numfiles;           //Number of files inside resource
+    int compression = 0;    //indicates if the resource file uses compression
+    int numfiles = 0;       //Number of files inside resource
     int position;
     vector<int> positions;  //Position vector of all files
     int size;
@@ -196,13 +196,25 @@ void Resource::listFiles(char *resourcename) {
         //Compressin flag
         file.seekg(0, ios::beg);
         file.read(reinterpret_cast<char*>(&compression), sizeof(int));
+        if (!file) {
+            cout << "Could not read resource header from " << resourcename << endl;
+            return 1;
+        }
         
         //Number of files
         file.read(reinterpret_cast<char*>(&numfiles), sizeof(int));
+        if (!file || numfiles < 0) {
+            cout << "Invalid resource file: " << resourcename << endl;
+            return 1;
+        }
         
         //Gets the start byte positin of each file
         for (int i = 0; i < numfiles; i++) {
             file.read(reinterpret_cast<char*>(&position), sizeof(int));
+            if (!file) {
+                cout << "Invalid resource file index table: " << resourcename << endl;
+                return 1;
+            }
             positions.push_back(position);
         }
         
@@ -211,13 +223,27 @@ void Resource::listFiles(char *resourcename) {
             file.seekg(positions[i]);
             file.read(reinterpret_cast<char*>(&size), sizeof(int));
             file.read(reinterpret_cast<char*>(&strsize), sizeof(int));
+            if (!file || strsize < 0) {
+                cout << "Invalid resource file entry: " << resourcename << endl;
+                return 1;
+            }
             name = new char[strsize + 1];
             file.read((name), strsize);
+            if (!file) {
+                delete[] name;
+                cout << "Invalid resource file entry name: " << resourcename << endl;
+                return 1;
+            }
             name[strsize] = '\0';
             
             // Skip the compressed_size field (needed for unpacking but not displayed)
             int compressed_size;
             file.read(reinterpret_cast<char*>(&compressed_size), sizeof(int));
+            if (!file || compressed_size < 0) {
+                delete[] name;
+                cout << "Invalid resource file entry size: " << resourcename << endl;
+                return 1;
+            }
             stored_size = compressed_size;
             
             sizes.push_back(size);
@@ -231,6 +257,7 @@ void Resource::listFiles(char *resourcename) {
     }
     else {
         cout << "Could not open the file " << resourcename << endl;
+        return 1;
     }
     
     cout << "Compression: " << (compression == 0 ? "No" : "Yes") << endl;
@@ -254,6 +281,8 @@ void Resource::listFiles(char *resourcename) {
     for (int i = 0; i < numfiles; i++) {
         delete[] names[i];
     }
+
+    return 0;
     
 }
 
