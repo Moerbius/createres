@@ -7,9 +7,9 @@ SDL_Surface *LoadBitmap(char *resourcefilename, char *bitmapfilename)
 	int filesize = 0;
 	char *buffer = GetBufferFromResource(resourcefilename, bitmapfilename, &filesize);
 
-	//Load the buffer into a surface using RWops
-	SDL_RWops *rw = SDL_RWFromMem(buffer, filesize);
-	SDL_Surface *temp = SDL_LoadBMP_RW(rw, 1);
+	//Load the buffer into a surface using SDL3 I/O
+	SDL_IOStream *io = SDL_IOFromMem(buffer, filesize);
+	SDL_Surface *temp = SDL_LoadBMP_IO(io, true);
 
 	//Release the bitmap buffer memory
 	free(buffer);
@@ -21,15 +21,8 @@ SDL_Surface *LoadBitmap(char *resourcefilename, char *bitmapfilename)
 		exit(1);
 	}
 
-	//Convert the image to optimal display format
-	SDL_Surface *image;
-	image = SDL_DisplayFormat(temp);
-
-	//Free the temporary surface
-	SDL_FreeSurface(temp);
-
-	//Return our loaded image
-	return image;
+	//SDL3 no longer uses SDL_DisplayFormat; return the loaded surface as-is
+	return temp;
 }
 
 ///
@@ -41,9 +34,9 @@ Mix_Chunk *LoadSound(char *resourcefilename, char *soundfilename)
 	int filesize = 0;
 	char *buffer = GetBufferFromResource(resourcefilename, soundfilename, &filesize);
 
-	//Load the buffer into a surface using RWops
-	SDL_RWops *rw = SDL_RWFromMem(buffer, filesize);
-	Mix_Chunk *sound = Mix_LoadWAV_RW(rw, 1);
+	//Load the buffer into a chunk using SDL3 I/O
+	SDL_IOStream *io = SDL_IOFromMem(buffer, filesize);
+	Mix_Chunk *sound = Mix_LoadWAV_IO(io, true);
 
 	//Release the buffer memory
 	free(buffer);
@@ -61,9 +54,9 @@ Mix_Music *LoadMusic(char *resourcefilename, char *soundfilename)
 	int filesize = 0;
 	char *buffer = GetBufferFromResource(resourcefilename, soundfilename, &filesize);
 
-	//Load the buffer into a surface using RWops
-	SDL_RWops *rw = SDL_RWFromMem(buffer, filesize);
-	Mix_Music *sound = Mix_LoadMUS_RW(rw);
+	//Load the buffer into music using SDL3 I/O
+	SDL_IOStream *io = SDL_IOFromMem(buffer, filesize);
+	Mix_Music *sound = Mix_LoadMUS_IO(io, true);
 
 	//You can't free the buffer, otherwise the App crashes
 	//free(buffer);
