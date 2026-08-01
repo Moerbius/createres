@@ -22,14 +22,20 @@ void Resource::pack(char *filename, char *path) {
     int fd;				            //The file descriptor for the new resource
     
     //Store the current path
-    getcwd(pathname, sizeof(pathname));
+    if (getcwd(pathname, sizeof(pathname)) == NULL) {
+        perror("getcwd failure");
+        exit(1);
+    }
     
     //How many files are there?
     filecount = countfiles(path);
     printf("NUMBER OF FILES: %i\n", filecount);
     
     //Go back to the original path
-    chdir(pathname);
+    if (chdir(pathname) != 0) {
+        perror("chdir failure");
+        exit(1);
+    }
     
     //Use the filename specified by the user
     fd = open(filename, O_WRONLY | O_EXCL | O_CREAT, S_IRUSR);
@@ -37,23 +43,16 @@ void Resource::pack(char *filename, char *path) {
     //Did we get a valid file descriptor?
     if (fd < 0) {
         if (errno == EEXIST) {
-            
-            close(fd);
-            
-            int removestatus = remove(filename);
-            
-            if( removestatus == 0 ) {
-                fd = open(filename, O_WRONLY | O_EXCL | O_CREAT, S_IRUSR);
-                
-                if(fd < 0) {
-                    perror("Error creating the file");
-                    exit(1);
-                }
-            }
-            else
-            {
-                printf("Unable to delete the file");
+            if (remove(filename) != 0) {
+                printf("Unable to delete the file\n");
                 perror("Error");
+                exit(1);
+            }
+
+            fd = open(filename, O_WRONLY | O_EXCL | O_CREAT, S_IRUSR);
+            if (fd < 0) {
+                perror("Error creating the file");
+                exit(1);
             }
         }
         else {
@@ -62,16 +61,19 @@ void Resource::pack(char *filename, char *path) {
         }
     }
     
-    //Write the compressin flag
-    write(fd, &compress, sizeof(int));
-    
-    //Advance to next position
-    //lseek(fd, sizeof(int)*2, SEEK_SET);
+    //Write the compression flag
+    if (write(fd, &compress, sizeof(int)) != (ssize_t)sizeof(int)) {
+        perror("Error writing compression flag");
+        close(fd);
+        exit(1);
+    }
     
     //Write the total number of files as the first integer
-    write(fd, &filecount, sizeof(int));
-    
-    //lseek(fd, sizeof(int), SEEK_SET);
+    if (write(fd, &filecount, sizeof(int)) != (ssize_t)sizeof(int)) {
+        perror("Error writing file count");
+        close(fd);
+        exit(1);
+    }
     
     //Set the current conditions
     currentfile = 1;					//Start off by storing the first file, obviously!
@@ -98,15 +100,36 @@ char *Resource::unpack(char *resourcefilename, char *resourcename, int *filesize
     lseek(fd, 0, SEEK_SET);
     
     //Get the compress flag
-    read(fd, &compress, sizeof(int));
+    if (read(fd, &compress, sizeof(int)) != (ssize_t)sizeof(int)) {
+        perror("Error reading compression flag");
+        close(fd);
+        exit(1);
+    }
     
     //Read the first INT, which will tell us how many files are in this resource
     int numfiles;
-    read(fd, &numfiles, sizeof(int));
+    if (read(fd, &numfiles, sizeof(int)) != (ssize_t)sizeof(int) || numfiles < 0) {
+        printf("Invalid resource file: %s\n", resourcefilename);
+        close(fd);
+        exit(1);
+    }
     
     //Get the pointers to the stored files
-    int *filestart = (int *) malloc(sizeof(int) * numfiles);
-    read(fd, filestart, sizeof(int) * numfiles);
+    int *filestart = NULL;
+    if (numfiles > 0) {
+        filestart = (int *) malloc(sizeof(int) * numfiles);
+        if (filestart == NULL) {
+            perror("malloc failure");
+            close(fd);
+            exit(1);
+        }
+        if (read(fd, filestart, sizeof(int) * numfiles) != (ssize_t)(sizeof(int) * numfiles)) {
+            printf("Invalid resource file index table: %s\n", resourcefilename);
+            free(filestart);
+            close(fd);
+            exit(1);
+        }
+    }
     
     //Loop through the files, looking for the file in question
     int filenamesize;
@@ -118,12 +141,34 @@ char *Resource::unpack(char *resourcefilename, char *resourcename, int *filesize
         //Seek to the location
         lseek(fd, filestart[i], SEEK_SET);
         //Get the filesize value (original uncompressed)
-        read(fd, filesize, sizeof(int));
+        if (read(fd, filesize, sizeof(int)) != (ssize_t)sizeof(int) || *filesize < 0) {
+            printf("Invalid resource file entry: %s\n", resourcefilename);
+            free(filestart);
+            close(fd);
+            exit(1);
+        }
         //Get the size of the filename string
-        read(fd, &filenamesize, sizeof(int));
+        if (read(fd, &filenamesize, sizeof(int)) != (ssize_t)sizeof(int) || filenamesize < 0) {
+            printf("Invalid resource file entry: %s\n", resourcefilename);
+            free(filestart);
+            close(fd);
+            exit(1);
+        }
         //Size the buffer and read the filename
         filename = (char *) malloc(filenamesize + 1);
-        read(fd, filename, filenamesize);
+        if (filename == NULL) {
+            perror("malloc failure");
+            free(filestart);
+            close(fd);
+            exit(1);
+        }
+        if (read(fd, filename, filenamesize) != filenamesize) {
+            printf("Invalid resource file entry name: %s\n", resourcefilename);
+            free(filename);
+            free(filestart);
+            close(fd);
+            exit(1);
+        }
         //Remember to terminate the string properly!
         filename[filenamesize] = '\0';
         //Compare to the string we're looking for
@@ -131,23 +176,83 @@ char *Resource::unpack(char *resourcefilename, char *resourcename, int *filesize
         {
             //Read the compressed size
             int compressed_size;
-            read(fd, &compressed_size, sizeof(int));
+            if (read(fd, &compressed_size, sizeof(int)) != (ssize_t)sizeof(int) || compressed_size < 0) {
+                printf("Invalid resource file entry size: %s\n", resourcefilename);
+                free(filename);
+                free(filestart);
+                close(fd);
+                exit(1);
+            }
             
             if(compress == 0) {
+                if (compressed_size != *filesize) {
+                    printf("Corrupt uncompressed entry size for '%s'\n", resourcename);
+                    free(filename);
+                    free(filestart);
+                    close(fd);
+                    exit(1);
+                }
                 //Read uncompressed contents
-                buffer = (char *) malloc(*filesize);
-                read(fd, buffer, compressed_size);
+                buffer = (char *) malloc(*filesize > 0 ? *filesize : 1);
+                if (buffer == NULL) {
+                    perror("malloc failure");
+                    free(filename);
+                    free(filestart);
+                    close(fd);
+                    exit(1);
+                }
+                if (*filesize > 0 && read(fd, buffer, compressed_size) != compressed_size) {
+                    printf("Error reading uncompressed entry '%s'\n", resourcename);
+                    free(buffer);
+                    free(filename);
+                    free(filestart);
+                    close(fd);
+                    exit(1);
+                }
             }
             else {
                 //Read compressed contents and decompress
-                char *compressed_buffer = (char *) malloc(compressed_size);
-                read(fd, compressed_buffer, compressed_size);
+                char *compressed_buffer = (char *) malloc(compressed_size > 0 ? compressed_size : 1);
+                if (compressed_buffer == NULL) {
+                    perror("malloc failure");
+                    free(filename);
+                    free(filestart);
+                    close(fd);
+                    exit(1);
+                }
+                if (compressed_size > 0 &&
+                    read(fd, compressed_buffer, compressed_size) != compressed_size) {
+                    printf("Error reading compressed entry '%s'\n", resourcename);
+                    free(compressed_buffer);
+                    free(filename);
+                    free(filestart);
+                    close(fd);
+                    exit(1);
+                }
                 
                 std::string uncompressed;
-                snappy::Uncompress(compressed_buffer, compressed_size, &uncompressed);
+                if (!snappy::Uncompress(compressed_buffer, compressed_size, &uncompressed) ||
+                    (int)uncompressed.size() != *filesize) {
+                    printf("Error decompressing entry '%s'\n", resourcename);
+                    free(compressed_buffer);
+                    free(filename);
+                    free(filestart);
+                    close(fd);
+                    exit(1);
+                }
                 
-                buffer = (char *) malloc(*filesize);
-                memcpy(buffer, uncompressed.data(), *filesize);
+                buffer = (char *) malloc(*filesize > 0 ? *filesize : 1);
+                if (buffer == NULL) {
+                    perror("malloc failure");
+                    free(compressed_buffer);
+                    free(filename);
+                    free(filestart);
+                    close(fd);
+                    exit(1);
+                }
+                if (*filesize > 0) {
+                    memcpy(buffer, uncompressed.data(), *filesize);
+                }
                 free(compressed_buffer);
             }
             free(filename);
@@ -185,15 +290,13 @@ int Resource::listFiles(char *resourcename) {
     int stored_size;
     vector<int> stored_sizes;
     int strsize;
-    vector<int> strsizes;   //Size vector of all files
-    char *name;
-    vector<char*> names;   //Names vector of all files
+    vector<string> names;   //Names vector of all files
     
     //Open the file for reading
     ifstream file (resourcename, ios::in | ios::binary);
     if(file.is_open()) {
         
-        //Compressin flag
+        //Compression flag
         file.seekg(0, ios::beg);
         file.read(reinterpret_cast<char*>(&compression), sizeof(int));
         if (!file) {
@@ -208,7 +311,7 @@ int Resource::listFiles(char *resourcename) {
             return 1;
         }
         
-        //Gets the start byte positin of each file
+        //Gets the start byte position of each file
         for (int i = 0; i < numfiles; i++) {
             file.read(reinterpret_cast<char*>(&position), sizeof(int));
             if (!file) {
@@ -227,20 +330,21 @@ int Resource::listFiles(char *resourcename) {
                 cout << "Invalid resource file entry: " << resourcename << endl;
                 return 1;
             }
-            name = new char[strsize + 1];
-            file.read((name), strsize);
+
+            string name;
+            name.resize(strsize);
+            if (strsize > 0) {
+                file.read(&name[0], strsize);
+            }
             if (!file) {
-                delete[] name;
                 cout << "Invalid resource file entry name: " << resourcename << endl;
                 return 1;
             }
-            name[strsize] = '\0';
             
             // Skip the compressed_size field (needed for unpacking but not displayed)
             int compressed_size;
             file.read(reinterpret_cast<char*>(&compressed_size), sizeof(int));
             if (!file || compressed_size < 0) {
-                delete[] name;
                 cout << "Invalid resource file entry size: " << resourcename << endl;
                 return 1;
             }
@@ -248,7 +352,6 @@ int Resource::listFiles(char *resourcename) {
             
             sizes.push_back(size);
             stored_sizes.push_back(stored_size);
-            strsizes.push_back(strsize);
             names.push_back(name);
         }
         
@@ -261,7 +364,7 @@ int Resource::listFiles(char *resourcename) {
     }
     
     cout << "Compression: " << (compression == 0 ? "No" : "Yes") << endl;
-    cout << "     #files: " << numfiles << endl << endl;;
+    cout << "     #files: " << numfiles << endl << endl;
     cout << "       filename       | orig size | stored size | ratio | position " << endl;
     cout << "----------------------|-----------|-------------|-------|----------" << endl;
     
@@ -276,10 +379,6 @@ int Resource::listFiles(char *resourcename) {
              << " | " << setw(11) << stored_sizes[i]
              << " | " << setw(3) << ratio << "%"
              << " | " << positions[i] << endl;
-    }
-
-    for (int i = 0; i < numfiles; i++) {
-        delete[] names[i];
     }
 
     return 0;
@@ -316,7 +415,11 @@ int Resource::countfiles(char *path) {
     }
     
     //Change directory to the given path
-    chdir(path);
+    if (chdir(path) != 0) {
+        perror("chdir failure");
+        closedir(dir);
+        exit(1);
+    }
     
     //Loop through all files and directories
     while ( (entry = readdir(dir)) != NULL) {
@@ -328,7 +431,11 @@ int Resource::countfiles(char *path) {
                 if (S_ISDIR(file_status.st_mode)) {
                     //Call countfiles again (recursion) and add the result to the count total
                     count += countfiles(entry->d_name);
-                    chdir("..");
+                    if (chdir("..") != 0) {
+                        perror("chdir failure");
+                        closedir(dir);
+                        exit(1);
+                    }
                 }
                 else {
                     //We've found a file, increment the count
@@ -357,38 +464,69 @@ void Resource::packfile(char *filename, int fd) {
     
     //In the 'header' area of the resource, write the location of the file about to be added
     lseek(fd, currentfile * sizeof(int) + sizeof(int), SEEK_SET);
-    write(fd, &currentloc, sizeof(int));
+    if (write(fd, &currentloc, sizeof(int)) != (ssize_t)sizeof(int)) {
+        perror("Error writing file offset");
+        exit(1);
+    }
     
     //Seek to the location where we'll be storing this new file info
     lseek(fd, currentloc, SEEK_SET);
     
     //Write the size of the file
     int filesize = getfilesize(filename);
-    write(fd, &filesize, sizeof(filesize));
+    if (write(fd, &filesize, sizeof(filesize)) != (ssize_t)sizeof(filesize)) {
+        perror("Error writing file size");
+        exit(1);
+    }
     totalsize += sizeof(int);
     
     //Write the LENGTH of the NAME of the file
     int filenamelen = (int)strlen(filename);
-    write(fd, &filenamelen, sizeof(int));
+    if (write(fd, &filenamelen, sizeof(int)) != (ssize_t)sizeof(int)) {
+        perror("Error writing filename length");
+        exit(1);
+    }
     totalsize += sizeof(int);
     
     //Write the name of the file
-    write(fd, filename, strlen(filename));
-    totalsize += strlen(filename);
+    if (write(fd, filename, filenamelen) != filenamelen) {
+        perror("Error writing filename");
+        exit(1);
+    }
+    totalsize += filenamelen;
     
     
 
     // Read the file contents
     int fd_read = open(filename, O_RDONLY);
-    char *buffer = (char *) malloc(filesize);
-    read(fd_read, buffer, filesize);
+    if (fd_read < 0) {
+        perror("Error opening input file");
+        exit(1);
+    }
+
+    char *buffer = (char *) malloc(filesize > 0 ? filesize : 1);
+    if (buffer == NULL) {
+        perror("malloc failure");
+        close(fd_read);
+        exit(1);
+    }
+    if (filesize > 0 && read(fd_read, buffer, filesize) != filesize) {
+        perror("Error reading input file");
+        free(buffer);
+        close(fd_read);
+        exit(1);
+    }
     close(fd_read);
     
     if(compress == 0) {
         // Write uncompressed file contents
         int compressed_size = filesize;
-        write(fd, &compressed_size, sizeof(int));
-        write(fd, buffer, filesize);
+        if (write(fd, &compressed_size, sizeof(int)) != (ssize_t)sizeof(int) ||
+            (filesize > 0 && write(fd, buffer, filesize) != filesize)) {
+            perror("Error writing file contents");
+            free(buffer);
+            exit(1);
+        }
         totalsize += sizeof(int) + filesize;
     }
     else {
@@ -397,8 +535,13 @@ void Resource::packfile(char *filename, int fd) {
         snappy::Compress(buffer, filesize, &compressed);
         
         int compressed_size = (int)compressed.size();
-        write(fd, &compressed_size, sizeof(int));
-        write(fd, compressed.data(), compressed_size);
+        if (write(fd, &compressed_size, sizeof(int)) != (ssize_t)sizeof(int) ||
+            (compressed_size > 0 &&
+             write(fd, compressed.data(), compressed_size) != compressed_size)) {
+            perror("Error writing compressed contents");
+            free(buffer);
+            exit(1);
+        }
         totalsize += sizeof(int) + compressed_size;
         
         printf("   Compressed from %d to %d bytes\n", filesize, compressed_size);
@@ -426,7 +569,11 @@ void Resource::findfiles(char *path, int fd) {
     }
     
     //Change directory to the given path
-    chdir(path);
+    if (chdir(path) != 0) {
+        perror("chdir failure");
+        closedir(dir);
+        exit(1);
+    }
     
     //Loop through all files and directories
     while ( (entry = readdir(dir)) != NULL) {
@@ -438,7 +585,11 @@ void Resource::findfiles(char *path, int fd) {
                 if (S_ISDIR(file_status.st_mode)) {
                     //Call findfiles again (recursion), passing the new directory's path
                     findfiles(entry->d_name, fd);
-                    chdir("..");
+                    if (chdir("..") != 0) {
+                        perror("chdir failure");
+                        closedir(dir);
+                        exit(1);
+                    }
                 }
                 else {
                     //We've found a file, pack it into the resource file
