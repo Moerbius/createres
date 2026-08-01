@@ -48,7 +48,11 @@ Mix_Chunk *LoadSound(char *resourcefilename, char *soundfilename)
 ///
 ///    Load a music using Mix_Music
 ///
-Mix_Music *LoadMusic(char *resourcefilename, char *soundfilename)
+///    Mix_Music may stream from the source memory, so the buffer must outlive
+///    the Mix_Music object. Ownership of *owned_buffer is returned to the
+///    caller, who must free() it after Mix_FreeMusic().
+///
+Mix_Music *LoadMusic(char *resourcefilename, char *soundfilename, char **owned_buffer)
 {
 	//Get the sound's buffer and size from the resource file
 	int filesize = 0;
@@ -58,8 +62,17 @@ Mix_Music *LoadMusic(char *resourcefilename, char *soundfilename)
 	SDL_IOStream *io = SDL_IOFromMem(buffer, filesize);
 	Mix_Music *sound = Mix_LoadMUS_IO(io, true);
 
-	//You can't free the buffer, otherwise the App crashes
-	//free(buffer);
+	if (sound == NULL) {
+		free(buffer);
+		if (owned_buffer != NULL) {
+			*owned_buffer = NULL;
+		}
+		return NULL;
+	}
+
+	if (owned_buffer != NULL) {
+		*owned_buffer = buffer;
+	}
 
 	//Return the sound
 	return sound;
