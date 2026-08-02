@@ -1,7 +1,8 @@
 Package: createres
 Source: createres
+Section: utils
 Version: 3.1.1
 Architecture: amd64
-Maintainer: Moeribius
+Maintainer: Moerbius <moerbius@gmail.com>
 Priority: optional
 Description: Game resource packer with optional Snappy compression.
