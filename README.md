@@ -89,3 +89,6 @@ This repository includes VS Code workspace configs in `.vscode/`:
 - IntelliSense profiles for Linux and MSYS64
 
 Open the workspace and run `Tasks: Run Build Task` to build.
+
+
+To create the .deb package, in the debian_package/ execute ```dpkg-deb --build createres_3.1.1_amd64/```
